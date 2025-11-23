@@ -1,5 +1,7 @@
 # G-PFL-IDS: Graph-Driven Personalized Federated Learning for Unsupervised Intrusion Detection in Non-IID IoT Systems 
 
+![Alt text](./G-PFL-IDS-1.png "Optional title text")
+
 A Flower-based implementation of Graph-Driven Personalized Federated Learning for Unsupervised Intrusion Detection in Non-IID
 IoT Systems.
 
