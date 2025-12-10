@@ -83,6 +83,7 @@ target/
 # Jupyter Notebook
 *ipynb
 *note*
+*.txt
 
 # IPython
 profile_default/
