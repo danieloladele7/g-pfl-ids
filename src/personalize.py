@@ -1,9 +1,9 @@
 # personalize.py
 import torch
 from pathlib import Path
-from src.models import DeepSVDDGCN, GAEDeepSVDD, GCN, GAE
-from src.utils import load_client_data, create_data_loaders, normalize_graph_features
-from src.training.losses import DeepSVDDLoss, GAEReconstructionLoss
+from models import DeepSVDDGCN, GAEDeepSVDD, GCN, GAE
+from utils import load_client_data, create_data_loaders, normalize_graph_features
+from training.losses import DeepSVDDLoss, GAEReconstructionLoss
 import json, os
 
 def filter_state_dict(state_dict, model):
@@ -48,12 +48,26 @@ def personalize_oneclass_model(global_model, client_data, personalization_epochs
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     personalized_model.to(device)
     
-    # Determine embedding dimension from the model
-    if hasattr(personalized_model, 'embed_dim'):
-        embed_dim = personalized_model.embed_dim
-    else:
-        # Try to infer from model structure
-        embed_dim = 64  # Default based on your architecture
+    # Get embedding dimension from model architecture or forward pass
+    # For GAE models, we need to check what dimension they output
+    
+    # Run a forward pass to get the actual embedding dimension
+    personalized_model.eval()
+    with torch.no_grad():
+        # Get a sample batch
+        sample_data = next(iter(client_data)).to(device)
+        
+        if model_type in ['gcn', 'gcn_deepsvdd', 'deepsvdd', 'gcn_pure']:
+            embeddings, _ = personalized_model(sample_data.x, sample_data.edge_index)
+        elif model_type in ['gae', 'gae_deepsvdd', 'gae_pure']:
+            if model_type == 'gae_pure':
+                _, embeddings = personalized_model(sample_data.x, sample_data.edge_index)
+            else:
+                reconstructed, embeddings = personalized_model(sample_data.x, sample_data.edge_index)
+        else:
+            embeddings, _ = personalized_model(sample_data.x, sample_data.edge_index)
+        
+        embed_dim = embeddings.shape[1]
     
     print(f"Personalizing {model_type} model with embedding dimension: {embed_dim}")
     
@@ -103,9 +117,10 @@ def personalize_oneclass_model(global_model, client_data, personalization_epochs
     if client_embeddings:
         all_embeddings = torch.cat(client_embeddings)
         client_center = all_embeddings.mean(dim=0)
-        # Ensure center has correct dimension
+        # Ensure center has correct dimension (should already match embed_dim)
         if client_center.shape[0] != embed_dim:
-            print(f"Adjusting center dimension from {client_center.shape[0]} to {embed_dim}")
+            print(f"Warning: Center dimension {client_center.shape[0]} doesn't match embedding dimension {embed_dim}")
+            print(f"Adjusting center to match embedding dimension")
             if client_center.shape[0] < embed_dim:
                 # Pad with zeros
                 padding = torch.zeros(embed_dim - client_center.shape[0]).to(device)
@@ -116,7 +131,7 @@ def personalize_oneclass_model(global_model, client_data, personalization_epochs
     else:
         client_center = torch.zeros(embed_dim).to(device)
     
-    print(f"Client center computed with dimension: {client_center.shape}")
+    print(f"Client center computed with dimension: {client_center.shape} (expected: {embed_dim})")
     
     # Fine-tune with client data
     optimizer = torch.optim.Adam(
@@ -315,7 +330,7 @@ if __name__ == "__main__":
     results = personalize_clients_global(
         args.global_model, 
         args.data_dir, 
-        args.output_dir,
+        os.path.join(args.output_dir, args.model_type),
         model_type=args.model_type,
         personalization_epochs=args.epochs,
         fine_tune_encoder=args.fine_tune_encoder

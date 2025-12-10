@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
-from src.utils.training_utils import set_seed, dirichlet_split_by_label
+from utils.utils import set_seed#, dirichlet_split_by_label
 from pathlib import Path
 import logging
 import re
@@ -472,91 +472,91 @@ def validate_graph_consistency(graph_data):
     
     return True
 
-def process_iot23_data(input_path: Path, output_dir: Path, n_clients: int = 10, alpha: float = 0.5, min_samples_per_client: int = 986, labeling_strategy: str = "per_flow", mode: str = "oneclass", fraction: float = 0.3, seed: int = 42):
-    """Process IoT-23 data and create non-IID client splits"""
-    set_seed(seed)
+# def process_iot23_data(input_path: Path, output_dir: Path, n_clients: int = 10, alpha: float = 0.5, min_samples_per_client: int = 986, labeling_strategy: str = "per_flow", mode: str = "oneclass", fraction: float = 0.3, seed: int = 42):
+#     """Process IoT-23 data and create non-IID client splits"""
+#     set_seed(seed)
     
-    # Read and preprocess the data
-    logger.info("Reading Zeek conn log...")
-    df = read_zeek_conn(input_path)
-    total_size = int(len(df) * fraction)
-    df_frac = df.iloc[:total_size]
+#     # Read and preprocess the data
+#     logger.info("Reading Zeek conn log...")
+#     df = read_zeek_conn(input_path)
+#     total_size = int(len(df) * fraction)
+#     df_frac = df.iloc[:total_size]
     
-    logger.info("Processing flow features...")
-    df_processed = process_flow_features(df_frac)
+#     logger.info("Processing flow features...")
+#     df_processed = process_flow_features(df_frac)
     
-    # Filter data based on mode
-    logger.info(f"Filtering data for {mode} mode...")
-    if mode == "oneclass":
-        # Keep only benign samples for one-class learning
-        benign_mask = df_processed['label'].str.contains('benign|normal', case=False, na=False)
-        if benign_mask.sum() == 0:
-            logger.warning("No benign samples found for one-class mode!")
-        else:
-            df_processed = df_processed[benign_mask]
-            logger.info(f"One-class mode: Keeping {benign_mask.sum()} benign samples")
+#     # Filter data based on mode
+#     logger.info(f"Filtering data for {mode} mode...")
+#     if mode == "oneclass":
+#         # Keep only benign samples for one-class learning
+#         benign_mask = df_processed['label'].str.contains('benign|normal', case=False, na=False)
+#         if benign_mask.sum() == 0:
+#             logger.warning("No benign samples found for one-class mode!")
+#         else:
+#             df_processed = df_processed[benign_mask]
+#             logger.info(f"One-class mode: Keeping {benign_mask.sum()} benign samples")
     
-    # Create labels based on the selected strategy
-    if labeling_strategy == "per_flow":
-        labels = create_per_flow_labels(df_processed)
-        # For per-flow, we'll use all the data
-        data_to_split = df_processed
-    else:  # per_host
-        logger.info("Creating per-host labels...")
-        host_labels = create_per_host_labels(df_processed)
+#     # Create labels based on the selected strategy
+#     if labeling_strategy == "per_flow":
+#         labels = create_per_flow_labels(df_processed)
+#         # For per-flow, we'll use all the data
+#         data_to_split = df_processed
+#     else:  # per_host
+#         logger.info("Creating per-host labels...")
+#         host_labels = create_per_host_labels(df_processed)
         
-        # For per-host, we need to aggregate features per host
-        # First, identify numeric columns only
-        numeric_cols = df_processed.select_dtypes(include=[np.number]).columns.tolist()
-        numeric_cols = [col for col in numeric_cols if col not in ['id.orig_h', 'id.resp_h', 'label']]
+#         # For per-host, we need to aggregate features per host
+#         # First, identify numeric columns only
+#         numeric_cols = df_processed.select_dtypes(include=[np.number]).columns.tolist()
+#         numeric_cols = [col for col in numeric_cols if col not in ['id.orig_h', 'id.resp_h', 'label']]
         
-        # Just a simplified feature aggregation - TODO: implement proper feature aggregation
-        src_features = df_processed.groupby('id.orig_h')[numeric_cols].mean().add_prefix('src_')
-        # Aggregate destination features
-        dst_features = df_processed.groupby('id.resp_h')[numeric_cols].mean().add_prefix('dst_')
+#         # Just a simplified feature aggregation - TODO: implement proper feature aggregation
+#         src_features = df_processed.groupby('id.orig_h')[numeric_cols].mean().add_prefix('src_')
+#         # Aggregate destination features
+#         dst_features = df_processed.groupby('id.resp_h')[numeric_cols].mean().add_prefix('dst_')
         
-        # Combine features
-        host_features = src_features.join(dst_features, how='outer').fillna(0)
+#         # Combine features
+#         host_features = src_features.join(dst_features, how='outer').fillna(0)
         
-        # Merge with labels
-        data_to_split = host_features.join(host_labels)
-        labels = data_to_split['is_malicious'].values
+#         # Merge with labels
+#         data_to_split = host_features.join(host_labels)
+#         labels = data_to_split['is_malicious'].values
     
-    # Create non-IID splits using Dirichlet distribution
-    logger.info("Creating non-IID client splits...")
-    client_indices = dirichlet_split_by_label(labels, n_clients, alpha=alpha, min_samples_per_client=min_samples_per_client, seed=seed)
+#     # Create non-IID splits using Dirichlet distribution
+#     logger.info("Creating non-IID client splits...")
+#     client_indices = dirichlet_split_by_label(labels, n_clients, alpha=alpha, min_samples_per_client=min_samples_per_client, seed=seed)
     
-    # Save client data
-    output_dir.mkdir(parents=True, exist_ok=True)
+#     # Save client data
+#     output_dir.mkdir(parents=True, exist_ok=True)
     
-    for i, indices in enumerate(client_indices):
-        if labeling_strategy == "per_flow":
-            client_data = df_processed.iloc[indices]
-        else:
-            # For per-host, we need to handle the indices differently
-            host_names = data_to_split.index[indices]
-            client_data = df_processed[
-                df_processed['id.orig_h'].isin(host_names) | 
-                df_processed['id.resp_h'].isin(host_names)
-            ]
+#     for i, indices in enumerate(client_indices):
+#         if labeling_strategy == "per_flow":
+#             client_data = df_processed.iloc[indices]
+#         else:
+#             # For per-host, we need to handle the indices differently
+#             host_names = data_to_split.index[indices]
+#             client_data = df_processed[
+#                 df_processed['id.orig_h'].isin(host_names) | 
+#                 df_processed['id.resp_h'].isin(host_names)
+#             ]
         
-        # Save client data
-        torch.save({
-            'data': client_data,
-            'labeling_strategy': labeling_strategy,
-            'client_id': i
-        }, output_dir / f"client_{i}.pt")
+#         # Save client data
+#         torch.save({
+#             'data': client_data,
+#             'labeling_strategy': labeling_strategy,
+#             'client_id': i
+#         }, output_dir / f"client_{i}.pt")
     
-    # Save dataset info
-    dataset_info = {
-        'labeling_strategy': labeling_strategy,
-        'n_clients': n_clients,
-        'alpha': alpha,
-        'total_samples': len(df_processed)
-    }
-    torch.save(dataset_info, output_dir / "dataset_info.pt")
+#     # Save dataset info
+#     dataset_info = {
+#         'labeling_strategy': labeling_strategy,
+#         'n_clients': n_clients,
+#         'alpha': alpha,
+#         'total_samples': len(df_processed)
+#     }
+#     torch.save(dataset_info, output_dir / "dataset_info.pt")
     
-    logger.info(f"Processed data saved to {output_dir}")
+#     logger.info(f"Processed data saved to {output_dir}")
 
 def load_malicious_data(data_dir: Path, client_id: str):
     """Load malicious data for evaluation"""
@@ -587,53 +587,53 @@ def create_malicious_evaluation_loaders(malicious_graph, batch_size=32):
     
     return test_loader, test_loader  # Return same for train/test compatibility
 
-def personalize_any_model(global_model, client_data, personalization_epochs=5, 
-                         model_type='gcn_deepsvdd', personalization_lr=0.001):
-    """Personalize any model type after global training"""
+# def personalize_any_model(global_model, client_data, personalization_epochs=5, 
+#                          model_type='gcn_deepsvdd', personalization_lr=0.001):
+#     """Personalize any model type after global training"""
     
-    # Create personalized copy
-    personalized_model = type(global_model)(
-        in_channels=128, hidden_channels=64, num_layers=2
-    )
-    personalized_model.load_state_dict(global_model.state_dict())
+#     # Create personalized copy
+#     personalized_model = type(global_model)(
+#         in_channels=128, hidden_channels=64, num_layers=2
+#     )
+#     personalized_model.load_state_dict(global_model.state_dict())
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    personalized_model.to(device)
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     personalized_model.to(device)
     
-    # Different optimization for different models
-    if 'personalized' in model_type:
-        # Only optimize personalized components
-        params_to_optimize = []
-        for name, param in personalized_model.named_parameters():
-            if 'personalized' in name or 'head' in name:
-                param.requires_grad = True
-                params_to_optimize.append(param)
-            else:
-                param.requires_grad = False
-    else:
-        # Fine-tune all parameters with lower LR
-        params_to_optimize = personalized_model.parameters()
+#     # Different optimization for different models
+#     if 'personalized' in model_type:
+#         # Only optimize personalized components
+#         params_to_optimize = []
+#         for name, param in personalized_model.named_parameters():
+#             if 'personalized' in name or 'head' in name:
+#                 param.requires_grad = True
+#                 params_to_optimize.append(param)
+#             else:
+#                 param.requires_grad = False
+#     else:
+#         # Fine-tune all parameters with lower LR
+#         params_to_optimize = personalized_model.parameters()
     
-    optimizer = torch.optim.Adam(params_to_optimize, lr=personalization_lr)
+#     optimizer = torch.optim.Adam(params_to_optimize, lr=personalization_lr)
     
-    # Train on client data
-    for epoch in range(personalization_epochs):
-        total_loss = 0
-        for data in client_data:
-            data = data.to(device)
-            optimizer.zero_grad()
+#     # Train on client data
+#     for epoch in range(personalization_epochs):
+#         total_loss = 0
+#         for data in client_data:
+#             data = data.to(device)
+#             optimizer.zero_grad()
             
-            if model_type in ['gcn', 'gcn_deepsvdd']:
-                embeddings, _ = personalized_model(data.x, data.edge_index)
-                loss = compute_deepsvdd_loss(embeddings, center)
-            elif model_type in ['gae', 'gae_deepsvdd']:
-                reconstructed, embeddings = personalized_model(data.x, data.edge_index)
-                loss = compute_hybrid_loss(embeddings, data.x, reconstructed)
+#             if model_type in ['gcn', 'gcn_deepsvdd']:
+#                 embeddings, _ = personalized_model(data.x, data.edge_index)
+#                 loss = compute_deepsvdd_loss(embeddings, center)
+#             elif model_type in ['gae', 'gae_deepsvdd']:
+#                 reconstructed, embeddings = personalized_model(data.x, data.edge_index)
+#                 loss = compute_hybrid_loss(embeddings, data.x, reconstructed)
             
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
+#             loss.backward()
+#             optimizer.step()
+#             total_loss += loss.item()
         
-        print(f"Personalization Epoch {epoch+1}: Loss = {total_loss:.4f}")
+#         print(f"Personalization Epoch {epoch+1}: Loss = {total_loss:.4f}")
     
-    return personalized_model
+#     return personalized_model

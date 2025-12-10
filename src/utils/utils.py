@@ -152,7 +152,7 @@ def load_model_from_checkpoint(checkpoint_path: Path, model_class, model_args: D
             model.load_state_dict(checkpoint['model_state_dict'])
         elif 'parameters' in checkpoint:
             # Flower parameters format (list of numpy arrays)
-            from .training_utils import set_model_parameters
+            from .utils import set_model_parameters
             set_model_parameters(model, checkpoint['parameters'])
         else:
             # Assume it's a direct state dict

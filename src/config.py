@@ -9,16 +9,16 @@ def get_run_config() -> Dict[str, Any]:
     
     # Default configuration - matches your pyproject.toml structure
     config = {
-        "num-server-rounds": int(os.getenv("FLWR_NUM_SERVER_ROUNDS", "2")),
+        "num-server-rounds": int(os.getenv("FLWR_NUM_SERVER_ROUNDS", "20")),
         "fraction-fit": float(os.getenv("FLWR_FRACTION_FIT", "0.5")),
         "fraction-evaluate": float(os.getenv("FLWR_FRACTION_EVALUATE", "1.0")),
         "min-fit-clients": int(os.getenv("FLWR_MIN_FIT_CLIENTS", "2")),
         "min-evaluate-clients": int(os.getenv("FLWR_MIN_EVALUATE_CLIENTS", "2")),
         "min-available-clients": int(os.getenv("FLWR_MIN_AVAILABLE_CLIENTS", "10")),
-        "local-epochs": int(os.getenv("FLWR_LOCAL_EPOCHS", "3")),
+        "local-epochs": int(os.getenv("FLWR_LOCAL_EPOCHS", "30")),
         "mode": os.getenv("FLWR_MODE", "oneclass"),
-        "model_type": os.getenv("FLWR_MODEL_TYPE", "gae"), # gcn, gae, gcn_deepsvdd, gae_deepsvdd, gcn_personalized, gae_personalized
-        "strategy": os.getenv("FLWR_STRATEGY", "fedavg"), # fedavg, fedprox
+        "model_type": os.getenv("FLWR_MODEL_TYPE", "gcn"), # gcn, gae, gcn_deepsvdd, gae_deepsvdd, gcn_personalized, gae_personalized
+        "strategy": os.getenv("FLWR_STRATEGY", "fedprox"), # fedavg, fedprox
         "fedprox_mu": float(os.getenv("FLWR_FEDPROX_MU", "0.01")),
     }
     
