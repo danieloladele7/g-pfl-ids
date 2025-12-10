@@ -1,4 +1,4 @@
-# G-PFL-IDS: Graph-Driven Personalized Federated Learning for Unsupervised Intrusion Detection in Non-IID IoT Systems 
+# G-PFL-IDS: Graph-Driven Personalized Federated Learning for Unsupervised Intrusion Detection in Non-IID IoT Systems
 
 ![Alt text](./G-PFL-IDS-1.png "Optional title text")
 
@@ -8,13 +8,14 @@ IoT Systems.
 ## Install dependencies and project
 
 1. Create a virtual environment:
-  ```bash
-  python -m venv g-pfl-ids
-  source g-pfl-ids/bin/activate  # On Windows: fl_gcn\Scripts\activate
 
-  # then git clone the project:
-  git clone https://github.com/danieloladele7/g-pfl-ids.git
-  ```
+```bash
+python -m venv g-pfl-ids
+source g-pfl-ids/bin/activate  # On Windows: fl_gcn\Scripts\activate
+
+# then git clone the project:
+git clone https://github.com/danieloladele7/g-pfl-ids.git
+```
 
 2. **Configuration:** The dependencies are listed in the `pyproject.toml` and you can edit them and install them using `pip install -e .`. Learn more in the [TOML configuration guide](https://flower.ai/docs/framework/how-to-configure-pyproject-toml.html):
 
@@ -34,7 +35,7 @@ flwr run .
 
 ## Project Structure
 
-``` text
+```text
 fl-gcn-ids/
 ├── data/
 │   ├── raw/
@@ -44,25 +45,25 @@ fl-gcn-ids/
 │   └── graph_data/
 ├── src/
 │   ├── evaluation/
-│   │   ├── __init__.py 
-│   │   ├── analyze_non_iid.py 
-│   │   ├── malicious_evaluator.py 
-│   │   └── non_iid_metrics.py 
+│   │   ├── __init__.py
+│   │   ├── analyze_non_iid.py
+│   │   ├── malicious_evaluator.py
+│   │   └── non_iid_metrics.py
 │   ├── models/
-│   │   ├── __init__.py 
-│   │   ├── base.py 
-│   │   ├── gcn.py 
-│   │   └── gae.py 
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── gcn.py
+│   │   └── gae.py
 │   ├── training/
-│   │   ├── __init__.py 
-│   │   ├── losses.py 
-│   │   └── trainers.py 
+│   │   ├── __init__.py
+│   │   ├── losses.py
+│   │   └── trainers.py
 │   ├── utils/
-│   │   ├── __init__.py 
-│   │   ├── data_preprocessing.py 
-│   │   ├── graph_builder.py 
-│   │   ├── oneclass_metrics.py 
-│   │   └── utils.py 
+│   │   ├── __init__.py
+│   │   ├── data_preprocessing.py
+│   │   ├── graph_builder.py
+│   │   ├── oneclass_metrics.py
+│   │   └── utils.py
 │   ├── __init__.py
 │   ├── config.py
 │   ├── client_app.py
@@ -79,7 +80,9 @@ In the `FL-GCN-IoT-IDS` directory, use `flwr run` to run a local simulation:
 ```bash
 flwr run .
 ```
+
 ## Citation:
+
 If you use `g-pfl-ids` for your research, please consider citing our paper:
 
 ```bibtex
@@ -88,7 +91,7 @@ If you use `g-pfl-ids` for your research, please consider citing our paper:
     author = {Daniel A. Oladele, Ige Ayokunle, Agbo-Ajala Olatunbosun, Ekundayo Olufisayo, Gaanesh Sree, Sibiya Malusi, Mnkandla
 Ernest},
     year = {2025},
-    journal = {},
+    journal = {Smart Cities},
     volume = {},
     number = {},
     pages = {},
@@ -99,7 +102,7 @@ Ernest},
 
 ## Resources
 
-- For more example on using the Flower's Deployment Engine: 
+- For more example on using the Flower's Deployment Engine:
   - [how-to guide](https://flower.ai/docs/framework/how-to-run-flower-with-deployment-engine.html)
   - [secure TLS-enabled communications](https://flower.ai/docs/framework/how-to-enable-tls-connections.html)
   - [SuperNode authentication](https://flower.ai/docs/framework/how-to-authenticate-supernodes.html).
